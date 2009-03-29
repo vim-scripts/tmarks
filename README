@@ -1,0 +1,20 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=2594
+
+This plugin provides commands to browse and to manipulate (place & 
+delete) marks.
+
+:TMarks
+    Browse all marks.
+
+:{range}TMarksPlace
+    Place the next available a-z mark at the specified line.
+
+:{range}TMarksDelete
+    Delete all a-z marks in range.
+
+:TMarksDeleteAll
+    Delete all a-z marks in the current buffer.
+
+In conjunction with vimscript #2584, this plugin is similar to vimscript #152.
+
+You might want to try wokmarks (vimscript #2522), which I personally use now.
