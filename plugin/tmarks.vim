@@ -3,9 +3,9 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-08-23.
-" @Last Change: 2009-03-29.
-" @Revision:    0.0.46
-" GetLatestVimScripts: <+SCRIPTID+> 1 tmarks.vim
+" @Last Change: 2010-11-01.
+" @Revision:    69
+" GetLatestVimScripts: 2594 0 tmarks.vim
 
 if &cp || exists("loaded_tmarks")
     finish
@@ -17,32 +17,38 @@ if !exists('g:loaded_tlib') || g:loaded_tlib < 11
         finish
     endif
 endif
-let loaded_tmarks = 1
+let loaded_tmarks = 2
 let s:save_cpo = &cpo
 set cpo&vim
-
-
-if !exists('g:tmarks_handlers') "{{{2
-    let g:tmarks_handlers = [
-            \ {'key':  4, 'agent': 'tmarks#AgentDeleteMark', 'key_name': '<c-d>', 'help': 'Delete mark'},
-            \ ]
-            " \ {'pick_last_item': 0},
-endif
 
 
 " Browse all marks.
 command! -bar TMarks call tmarks#List()
 
+
 " Place the next available a-z mark at the specified line.
-" :display: :{range}TMarksPlace
-command! -range -nargs=? -bar TMarksPlace call tmarks#PlaceNextMarkAtLine(<line1>)
+" :display: :{range}TMarkstoggle
+command! -range -nargs=? -bar TMarkstoggle call tmarks#ToggleMarkAtLine(<line1>)
 
 " Delete all a-z marks in range.
-" :display: :{range}TMarksDelete
-command! -range -nargs=? -bar TMarksDelete call tmarks#DeleteInRange(<line1>, <line2>)
+" :display: :{range}TMarksdelete
+command! -range -nargs=? -bar TMarksdelete call tmarks#DeleteInRange(<line1>, <line2>)
 
 " Delete all a-z marks in the current buffer.
-command! -bar TMarksDeleteAll call tmarks#DeleteAllMarks()
+" :display: :TMarksdeleteall
+command! -bar TMarksdeleteall call tmarks#DeleteAllMarks()
+
+" Jump to the nth prev/next mark.
+" :display: :TMarksnext
+command! -count=1 -bar TMarksnext call tmarks#Next(<count>)
+
+
+" @TPluginInclude
+if exists('g:tmarks_key')
+    exec 'map <silent> <'. g:tmarks_key .'> :<c-u>call tmarks#Next(v:count1)<cr>'
+    exec 'map <silent> <s-'. g:tmarks_key .'> :<c-u>call tmarks#Next(-v:count1)<cr>'
+    exec 'map <silent> <c-'. g:tmarks_key .'> :call tmarks#ToggleMarkAtLine()<cr>'
+endif
 
 
 let &cpo = s:save_cpo
@@ -53,4 +59,10 @@ finish
 
 0.1
 Initial release
+
+0.2
+- Moved the definition of some variables from plugin/tmarks.vim to 
+autoload/tmarks.vim
+- Removed some commands & related functions (there are better plugins for 
+that): TMarksPlace, TMarksDelete, TMarksDeleteAll
 

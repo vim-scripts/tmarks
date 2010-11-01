@@ -3,13 +3,19 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2009-03-29.
-" @Last Change: 2009-03-29.
-" @Revision:    0.0.24
-
-let s:save_cpo = &cpo
-set cpo&vim
+" @Last Change: 2010-10-23.
+" @Revision:    0.0.123
 
 
+if !exists('g:tmarks_handlers') "{{{2
+    let g:tmarks_handlers = [
+            \ {'key':  4, 'agent': 'tmarks#AgentDeleteMark', 'key_name': '<c-d>', 'help': 'Delete mark'},
+            \ ]
+            " \ {'pick_last_item': 0},
+endif
+
+
+" :nodoc:
 function! tmarks#AgentDeleteMark(world, selected) "{{{3
     for l in a:selected
         call s:DelMark(s:GetMark(l))
@@ -30,10 +36,17 @@ function! s:GetList() "{{{3
 endf
 
 
-function! s:GetLocalList() "{{{3
+function! s:GetLocalMarks(key_is_mark) "{{{3
     let local_marks = s:GetList()
     call filter(local_marks, 'v:val =~ '' \l ''')
-    return local_marks
+    let marks = {}
+    for line in local_marks
+        let ml = matchlist(line, '^\s\(\l\)\s\+\(\d\+\)')[1:2]
+        if !empty(ml)
+            let marks[ml[!a:key_is_mark]] = ml[!!a:key_is_mark]
+        endif
+    endfor
+    return marks
 endf
 
 
@@ -42,48 +55,7 @@ function! s:GetMark(line) "{{{3
 endf
 
 
-" Delete all (lower-case) marks at the specified line.
-" :display: tmarks#DeleteInRange(?line1=line('.'), ?line2=line('.'))
-function! tmarks#DeleteInRange(...) "{{{3
-    TVarArg ['line1', line('.')], ['line2', line('.')]
-    let local_marks = s:GetLocalList()
-    call filter(local_marks, 'matchstr(v:val, ''\l \+\zs\d\+'') >= line1 && matchstr(v:val, ''\l \+\zs\d\+'') <= line2')
-    for mark in local_marks
-        call s:DelMark(s:GetMark(mark))
-    endfor
-endf
-
-
-" Delete all (lower-case) marks for the current buffer.
-function! tmarks#DeleteAllMarks() "{{{3
-    let local_marks = s:GetLocalList()
-    for mark in local_marks
-        call s:DelMark(s:GetMark(mark))
-    endfor
-endf
-
-
-let s:local_marks = split('abcdefghijklmnopqrstuvwxyz', '\zs')
-
-function! tmarks#PlaceNextMarkAtLine(...) "{{{3
-    TVarArg ['line', line('.')]
-    let local_marks = s:GetLocalList()
-    let i = 0
-    for mark in local_marks
-        let this = s:GetMark(mark)
-        let that = s:local_marks[i]
-        if this !=# that
-            exec line .'mark '. that
-            return
-        endif
-        let i += 1
-    endfor
-    echohl Error
-    echom 'TMarks: No mark available'
-    echohl None
-endf
-
-
+" :nodoc:
 function! tmarks#List() "{{{3
     keepjumps let m = tlib#input#List('s', 'Marks', s:GetList(), g:tmarks_handlers)
     if !empty(m)
@@ -91,5 +63,81 @@ function! tmarks#List() "{{{3
     endif
 endf
 
-let &cpo = s:save_cpo
-unlet s:save_cpo
+
+" Delete all (lower-case) marks at the specified line.
+" :display: tmarks#DeleteInRange(?line1=line('.'), ?line2=line('.'))
+" :nodoc:
+function! tmarks#DeleteInRange(...) "{{{3
+    TVarArg ['line1', line('.')], ['line2', line('.')]
+    for [line, mark] in items(s:GetLocalMarks(0))
+        if line >= line1 && line <= line2
+            call s:DelMark(mark)
+        endif
+    endfor
+endf
+
+
+" Delete all (lower-case) marks for the current buffer.
+" :nodoc:
+function! tmarks#DeleteAllMarks() "{{{3
+    for mark in keys(s:GetLocalMarks(1))
+        call s:DelMark(mark)
+    endfor
+endf
+
+
+let s:local_marks = split('abcdefghijklmnopqrstuvwxyz', '\zs')
+
+
+" :display: tmarks#ToggleMarkAtLine(?line='.')
+" Toggle the mark at line.
+function! tmarks#ToggleMarkAtLine(...) "{{{3
+    TVarArg ['line', line('.')]
+    if line =~ '^\.\?$'
+        let line = line('.')
+    endif
+    let lines = s:GetLocalMarks(0)
+    " TLogVAR lines, marks
+    if has_key(lines, line)
+        let mark = lines[line]
+        call s:DelMark(mark)
+        echom 'Remove mark' mark 'at line' line
+        return
+    else
+        let marks = s:GetLocalMarks(1)
+        for mark in s:local_marks
+            if !has_key(marks, mark)
+                exec line .'mark '. mark
+                echom 'Set mark' mark 'at line' line
+                return
+            endif
+        endfor
+    endif
+    echohl Error
+    echom 'TMarks: No mark available'
+    echohl None
+endf
+
+
+function! tmarks#Next(count) "{{{3
+    let cul = line('.')
+    " TLogVAR a:count, cul
+    let lines = keys(s:GetLocalMarks(0))
+    if !empty(lines)
+        call map(lines, 'printf("%99s", v:val)')
+        call sort(lines)
+        call map(lines, '0 + matchstr(v:val, ''\d\+'')')
+        " TLogVAR lines
+        if a:count > 0
+            let lines = filter(copy(lines), 'v:val > cul')
+                        \ + filter(copy(lines), 'v:val <= cul')
+            exec lines[(a:count - 1) % len(lines)]
+        elseif a:count < 0
+            let lines = reverse(filter(copy(lines), 'v:val < cul'))
+                        \ + reverse(filter(copy(lines), 'v:val >= cul'))
+            exec lines[(-a:count - 1) % len(lines)]
+        endif
+    endif
+endf
+
+

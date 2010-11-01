@@ -1,5 +1,7 @@
 This is a mirror of http://www.vim.org/scripts/script.php?script_id=2594
 
+Also available via git: http://github.com/tomtom/tmarks_vim
+
 This plugin provides commands to browse and to manipulate (place & 
 delete) marks.
 
